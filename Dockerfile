@@ -1,18 +1,31 @@
-# Use official PHP 8.2 with Apache
-FROM php:8.2-apache
+FROM ubuntu:22.04
 
-# Fix: Disable conflicting MPMs, enable only mpm_event
-RUN a2dismod mpm_event mpm_worker mpm_prefork 2>/dev/null; \
-    a2enmod mpm_prefork
+# Prevent interactive prompts during install
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Enable Apache rewrite module
+# Install Apache + PHP in one clean layer
+RUN apt-get update && apt-get install -y \
+    apache2 \
+    php \
+    libapache2-mod-php \
+    php-mysql \
+    php-curl \
+    php-mbstring \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable rewrite
 RUN a2enmod rewrite
 
-# Copy all your project files into the web server root
+# Copy project files
 COPY . /var/www/html/
 
-# Give proper permissions to files
+# Remove default Apache page
+RUN rm /var/www/html/index.html 2>/dev/null || true
+
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html/
 
-# Expose port 80
 EXPOSE 80
+
+# Start Apache in foreground (required for Docker)
+CMD ["apache2ctl", "-D", "FOREGROUND"]
