@@ -1,9 +1,7 @@
 FROM ubuntu:22.04
 
-# Prevent interactive prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Apache + PHP in one clean layer
 RUN apt-get update && apt-get install -y \
     apache2 \
     php \
@@ -13,19 +11,22 @@ RUN apt-get update && apt-get install -y \
     php-mbstring \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable rewrite
+# Enable rewrite module
 RUN a2enmod rewrite
+
+# Fix ServerName warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Copy project files
 COPY . /var/www/html/
-
-# Remove default Apache page
-RUN rm /var/www/html/index.html 2>/dev/null || true
-
-# Set permissions
+RUN rm -f /var/www/html/index.html
 RUN chown -R www-data:www-data /var/www/html/
 
-EXPOSE 80
+# Allow .htaccess overrides
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
-# Start Apache in foreground (required for Docker)
-CMD ["apache2ctl", "-D", "FOREGROUND"]
+# ✅ KEY FIX: Start script that sets Apache to listen on Railway's dynamic $PORT
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
