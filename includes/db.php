@@ -1,20 +1,18 @@
 <?php
-// Database configuration - edit these or use db_config.php
-if (file_exists(__DIR__ . '/db_config.php')) {
-    $db_config = require __DIR__ . '/db_config.php';
-    define('DB_HOST', $db_config['host'] ?? 'localhost');
-    define('DB_USER', $db_config['user'] ?? 'root');
-    define('DB_PASS', $db_config['pass'] ?? '');
-    define('DB_NAME', $db_config['name'] ?? 'rideeasy_db');
-} else {
-    define('DB_HOST', 'localhost');
-    define('DB_USER', 'root');
-    define('DB_PASS', '14052005');  // Change this to your MySQL password
-    define('DB_NAME', 'rideeasy_db');
-}
+// ============================================================
+// Database Configuration
+// Railway provides MySQL credentials as environment variables
+// Fallback values are for local development only
+// ============================================================
 
-// Create connection
-$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+define('DB_HOST', getenv('MYSQLHOST')     ?: 'localhost');
+define('DB_PORT', getenv('MYSQLPORT')     ?: '3306');
+define('DB_USER', getenv('MYSQLUSER')     ?: 'root');
+define('DB_PASS', getenv('MYSQLPASSWORD') ?: '14052005');
+define('DB_NAME', getenv('MYSQLDATABASE') ?: 'rideeasy_db');
+
+// Create connection (mysqli supports custom port)
+$conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME, (int)DB_PORT);
 
 // Check connection
 if (!$conn) {
@@ -24,7 +22,7 @@ if (!$conn) {
 // Set charset to UTF-8
 mysqli_set_charset($conn, "utf8mb4");
 
-// Function to sanitize input
+// Sanitize user input
 function clean_input($data) {
     global $conn;
     $data = trim($data);
@@ -33,8 +31,9 @@ function clean_input($data) {
     return mysqli_real_escape_string($conn, $data);
 }
 
-// Function to check if user is logged in (admin)
+// Check if admin is logged in
 function is_admin_logged_in() {
-    return isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+    return isset($_SESSION['admin_logged_in']) 
+           && $_SESSION['admin_logged_in'] === true;
 }
 ?>
