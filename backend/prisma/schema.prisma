@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum BikeStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(100)
+  password      String    @db.VarChar(255)
+  contactNumber String?   @map("contact_number") @db.VarChar(20)
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true) @map("is_active")
+  isArchive     Boolean   @default(false) @map("is_archive")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  bookings      Booking[]
+
+  @@map("users")
+}
+
+model Bike {
+  id          String     @id @default(uuid())
+  name        String     @db.VarChar(100)
+  type        String     @db.VarChar(50)
+  description String?    @db.Text
+  gears       Int?
+  size        String?    @db.VarChar(20)
+  pricePerDay Decimal    @map("price_per_day") @db.Decimal(10, 2)
+  image       String?
+  status      BikeStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  bookings    Booking[]
+
+  @@map("bikes")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  bikeId        String        @map("bike_id")
+  userId        String        @map("user_id")
+  startDate     DateTime?     @map("start_date")
+  endDate       DateTime?     @map("end_date")
+  days          Int
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod String?       @map("payment_method") @db.VarChar(50)
+  status        BookingStatus @default(PENDING)
+  bookingDate   DateTime      @default(now()) @map("booking_date")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  bike Bike @relation(fields: [bikeId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
